@@ -1,12 +1,30 @@
 [package]
-name = "libechoexec"
-version = "0.1.0"
-authors = ["Jason Ozias <jason.ozias@kroger.com>"]
+authors = ["Jason Ozias <jason.ozias@gmail.com>"]
+description = "Echo Logger for Rust"
+documentation = "http://docs.rs/libechoexec"
 edition = "2018"
+homepage = "http://docs.rs/libechoexec"
+keywords = ["echo"]
+license = "MIT/Apache-2.0"
+name = "libechoexec"
+readme = "README.md"
+repository = "https://github.com/rustyhorde/libechoexec"
+version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 futures-preview = "=0.3.0-alpha.17"
-tokio = { git = "https://github.com/tokio-rs/tokio" }
+getset = "0"
 hyper = { git = "https://github.com/hyperium/hyper" }
+hyper-tls = { git = "https://github.com/hyperium/hyper-tls" }
+serde = "1"
+serde_derive = "1"
+serde_json = "1"
+slog = "2"
+slog-try = "0"
+tokio = { git = "https://github.com/tokio-rs/tokio" }
+uuid = { version = "0", features = [ "serde", "v4" ] }
+
+[dev-dependencies]
+chrono = { version = "0", features = [ "serde" ] }
