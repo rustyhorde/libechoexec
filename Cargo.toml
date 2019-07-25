@@ -21,10 +21,12 @@ hyper-tls = { git = "https://github.com/hyperium/hyper-tls" }
 serde = "1"
 serde_derive = "1"
 serde_json = "1"
-slog = "2"
+slog = { version = "2", features = [ "max_level_trace" ] }
 slog-try = "0"
 tokio = { git = "https://github.com/tokio-rs/tokio" }
 uuid = { version = "0", features = [ "serde", "v4" ] }
 
 [dev-dependencies]
 chrono = { version = "0", features = [ "serde" ] }
+slog-term = "2"
+slog-async = "2"

@@ -24,7 +24,7 @@
 //!
 //!       // Create an 'Echo Event'
 //!       let mut echo_event = Event::default();
-//!       let _ = echo_event.set_routing_key("atlas-dev-promises");
+//!       let _ = echo_event.set_routing_key("atlas-local-promises");
 //!       let _ = echo_event.set_event_type(EventType::System);
 //!       let _ = echo_event.set_message("testing");
 //!       let _ = echo_event.set_correlation_id(Some(Uuid::parse_str(
@@ -80,17 +80,20 @@
 //!
 //!       // Listen for 10 messages on the receiver end
 //!       // Spawn a payload onto the runtime each time a message is received
-//!       for i in 0..10 {
+//!       let mut count = 0;
+//!       for _ in 0..10 {
 //!           let j = rx.recv().map_err(|e| format!("{}", e))?;
 //!           assert_eq!(j, "message");
-//!           let _ = echo_event.set_message(format!("Message {}", i));
+//!           let _ = echo_event.set_message(format!("Message {}", count));
 //!           let mut payload = Payload::default();
 //!           let _ = payload.set_events(vec![echo_event.clone()]);
 //!           assert!(echo_spawner.spawn(&payload).is_ok());
+//!           count += 1;
 //!       }
+//!       assert_eq!(count, 10);
 //!
 //!       // Sleep so the spawned futures can complete
-//!       thread::sleep(Duration::from_millis(500));
+//!       thread::sleep(Duration::from_millis(1000));
 //!
 //!       for handle in handles {
 //!           let _ = handle.join();

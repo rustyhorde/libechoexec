@@ -406,6 +406,7 @@ mod test {
         super::{Event, EventType, Payload, Response, Spawner},
         crate::error::Result,
         chrono::{offset::TimeZone, Utc},
+        slog::{o, Drain, Logger},
         std::{collections::HashMap, sync::mpsc::channel, thread, time::Duration},
         uuid::Uuid,
     };
@@ -489,7 +490,7 @@ mod test {
     fn single_thread_spawn() -> Result<()> {
         let echo_spawner = Spawner::new()?;
         let mut echo_event = Event::default();
-        let _ = echo_event.set_routing_key("atlas-dev-promises");
+        let _ = echo_event.set_routing_key("atlas-local-promises");
         let _ = echo_event.set_event_type(EventType::System);
         let _ = echo_event.set_message("testing");
         let _ = echo_event.set_correlation_id(Some(Uuid::parse_str(
@@ -500,9 +501,7 @@ mod test {
         let mut payload = Payload::default();
         let _ = payload.set_events(vec![echo_event]);
 
-        if let Err(e) = echo_spawner.spawn(&payload) {
-            println!("{}", e);
-        }
+        assert!(echo_spawner.spawn(&payload).is_ok());
 
         // Sleep so the spawned future can complete
         thread::sleep(Duration::from_millis(500));
@@ -515,10 +514,14 @@ mod test {
         let (tx, rx) = channel();
         let mut handles = vec![];
 
+        let plain = slog_term::TermDecorator::new().build();
+        let full = slog_term::FullFormat::new(plain).build().fuse();
+        let drain = slog_async::Async::new(full).build().fuse();
+        let logger = Logger::root(drain, o!());
+
         let mut echo_event = Event::default();
         let _ = echo_event.set_routing_key("atlas-local-promises");
         let _ = echo_event.set_event_type(EventType::System);
-        let _ = echo_event.set_message("testing");
         let _ = echo_event.set_correlation_id(Some(Uuid::parse_str(
             "35F3E1D6-D859-4AA0-8C58-2CDFE97A4710",
         )?));
@@ -531,16 +534,21 @@ mod test {
             }));
         }
 
+        let mut count = 0;
         for _ in 0..10 {
             let j = rx.recv().map_err(|e| format!("{}", e))?;
             assert_eq!(j, "message");
+            let _ = echo_event.set_message(format!("Message: {}", count));
             let mut payload = Payload::default();
+            let _ = payload.set_logger(Some(logger.clone()));
             let _ = payload.set_events(vec![echo_event.clone()]);
             let _ = echo_spawner.spawn(&payload);
+            count += 1;
         }
+        assert_eq!(count, 10);
 
         // Sleep so the spawned futures can complete
-        thread::sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(1000));
 
         for handle in handles {
             let _ = handle.join();
