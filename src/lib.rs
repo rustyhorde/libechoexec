@@ -80,12 +80,13 @@
 //!
 //!       // Listen for 10 messages on the receiver end
 //!       // Spawn a payload onto the runtime each time a message is received
-//!       for _ in 0..10 {
+//!       for i in 0..10 {
 //!           let j = rx.recv().map_err(|e| format!("{}", e))?;
 //!           assert_eq!(j, "message");
+//!           let _ = echo_event.set_message(format!("Message {}", i));
 //!           let mut payload = Payload::default();
 //!           let _ = payload.set_events(vec![echo_event.clone()]);
-//!           let _ = echo_spawner.spawn(&payload);
+//!           assert!(echo_spawner.spawn(&payload).is_ok());
 //!       }
 //!
 //!       // Sleep so the spawned futures can complete
