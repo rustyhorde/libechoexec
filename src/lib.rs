@@ -40,7 +40,7 @@
 //!       assert!(echo_spawner.spawn(&payload).is_ok());
 //!
 //!       // Sleep so the spawned future can complete in this short example
-//!       thread::sleep(Duration::from_millis(500));
+//!       thread::sleep(Duration::from_millis(1000));
 //! #    Ok(())
 //! # }
 //! ```
@@ -93,7 +93,7 @@
 //!       assert_eq!(count, 10);
 //!
 //!       // Sleep so the spawned futures can complete
-//!       thread::sleep(Duration::from_millis(1000));
+//!       thread::sleep(Duration::from_millis(2000));
 //!
 //!       for handle in handles {
 //!           let _ = handle.join();

@@ -486,9 +486,19 @@ mod test {
         Ok(())
     }
 
+    fn create_logger() -> Logger {
+        let plain = slog_term::TermDecorator::new().build();
+        let full = slog_term::FullFormat::new(plain).build().fuse();
+        let drain = slog_async::Async::new(full).build().fuse();
+        Logger::root(drain, o!())
+    }
+
     #[test]
     fn single_thread_spawn() -> Result<()> {
         let echo_spawner = Spawner::new()?;
+
+        let logger = create_logger();
+
         let mut echo_event = Event::default();
         let _ = echo_event.set_routing_key("atlas-local-promises");
         let _ = echo_event.set_event_type(EventType::System);
@@ -499,12 +509,13 @@ mod test {
         let _ = echo_event.set_timestamp(Some(Utc::now().timestamp_millis()));
 
         let mut payload = Payload::default();
+        let _ = payload.set_logger(Some(logger));
         let _ = payload.set_events(vec![echo_event]);
 
         assert!(echo_spawner.spawn(&payload).is_ok());
 
         // Sleep so the spawned future can complete
-        thread::sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(1000));
         Ok(())
     }
 
@@ -513,11 +524,7 @@ mod test {
         let echo_spawner = Spawner::new()?;
         let (tx, rx) = channel();
         let mut handles = vec![];
-
-        let plain = slog_term::TermDecorator::new().build();
-        let full = slog_term::FullFormat::new(plain).build().fuse();
-        let drain = slog_async::Async::new(full).build().fuse();
-        let logger = Logger::root(drain, o!());
+        let logger = create_logger();
 
         let mut echo_event = Event::default();
         let _ = echo_event.set_routing_key("atlas-local-promises");
@@ -548,7 +555,7 @@ mod test {
         assert_eq!(count, 10);
 
         // Sleep so the spawned futures can complete
-        thread::sleep(Duration::from_millis(1000));
+        thread::sleep(Duration::from_millis(2000));
 
         for handle in handles {
             let _ = handle.join();
