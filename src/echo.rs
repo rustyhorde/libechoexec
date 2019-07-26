@@ -13,6 +13,7 @@ use {
     getset::Setters,
     hyper::{client::HttpConnector, Body, Client, Request},
     hyper_tls::HttpsConnector,
+    lazy_static::lazy_static,
     serde::ser::{Serialize as Ser, Serializer},
     serde_derive::Serialize,
     slog::{error, trace, Logger},
@@ -63,6 +64,11 @@ impl Spawner {
 // A simple type alias so as to DRY.
 type FutResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
 
+lazy_static! {
+    static ref USER_AGENT: String =
+        format!("{}/{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+}
+
 async fn run_impl(
     client: Client<HttpsConnector<HttpConnector>>,
     logger: Option<Logger>,
@@ -74,7 +80,7 @@ async fn run_impl(
     let req = Request::builder()
         .method("POST")
         .uri(url)
-        .header("User-Agent", "curl/7.54.0")
+        .header("User-Agent", (*USER_AGENT).clone())
         .header("Content-Type", "application/json")
         .header("Content-Length", length)
         .body(Body::from(json))?;
