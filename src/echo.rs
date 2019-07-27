@@ -14,11 +14,11 @@ use {
     hyper::{client::HttpConnector, Body, Client, Request},
     hyper_tls::HttpsConnector,
     lazy_static::lazy_static,
-    serde::ser::{Serialize as Ser, Serializer},
-    serde_derive::Serialize,
+    serde::{de::{self, Deserialize as Deser, Deserializer, Visitor}, ser::{Serialize as Ser, Serializer}},
+    serde_derive::{Deserialize, Serialize},
     slog::{error, trace, Logger},
     slog_try::{try_error, try_trace},
-    std::{collections::HashMap, error::Error, io::Write},
+    std::{collections::HashMap, error::Error, fmt, io::Write},
     tokio::runtime::Runtime,
     uuid::Uuid,
 };
@@ -160,7 +160,7 @@ pub struct Payload {
 }
 
 /// An Echo Event
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Setters)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, Setters)]
 pub struct Event {
     /// The routing_key is what identifies the message with an application. It will become the ElasticSearch index.
     /// Valid characters are lowercase alpha numeric and '-'.
@@ -379,6 +379,33 @@ impl Ser for EventType {
     }
 }
 
+impl<'de> Deser<'de> for EventType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        deserializer.deserialize_str(EventTypeVisitor)
+    }
+}
+
+struct EventTypeVisitor;
+
+impl Visitor<'_> for EventTypeVisitor {
+    type Value = EventType;
+
+    fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("one of ERROR, INFO, PERFORMANCE, TRACKING or SYSTEM")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> where E: de::Error {
+        Ok(match value {
+            "ERROR" => EventType::Error,
+            "INFO" => EventType::Info,
+            "PERFORMANCE" => EventType::Performance,
+            "TRACKING" => EventType::Tracking,
+            "SYSTEM" => EventType::System,
+            _ => return Err(E::custom(format!("invalid event type: {}", value)))
+        })
+    }
+}
+
 /// A more generic response used when a HTTP response code doesn't make sense. Typical values might be "success" or "failure".
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Response {
@@ -403,6 +430,30 @@ impl Ser for Response {
             Response::Success => serializer.serialize_str("success"),
             Response::Failure => serializer.serialize_str("failure"),
         }
+    }
+}
+
+impl<'de> Deser<'de> for Response {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        deserializer.deserialize_str(ResponseVisitor)
+    }
+}
+
+struct ResponseVisitor;
+
+impl Visitor<'_> for ResponseVisitor {
+    type Value = Response;
+
+    fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("one of success or failure")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> where E: de::Error {
+        Ok(match value {
+            "success" => Response::Success,
+            "failure" => Response::Failure,
+            _ => return Err(E::custom(format!("invalid response: {}", value)))
+        })
     }
 }
 
