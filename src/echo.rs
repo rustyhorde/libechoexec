@@ -14,7 +14,11 @@ use {
     hyper::{client::HttpConnector, Body, Client, Request},
     hyper_tls::HttpsConnector,
     lazy_static::lazy_static,
-    serde::{de::{self, Deserialize as Deser, Deserializer, Visitor}, ser::{Serialize as Ser, Serializer}},
+    native_tls::TlsConnector,
+    serde::{
+        de::{self, Deserialize as Deser, Deserializer, Visitor},
+        ser::{Serialize as Ser, Serializer},
+    },
     serde_derive::{Deserialize, Serialize},
     slog::{error, trace, Logger},
     slog_try::{try_error, try_trace},
@@ -35,7 +39,16 @@ pub struct Spawner {
 impl Spawner {
     /// Create a new `EchoRuntime`
     pub fn new() -> crate::error::Result<Self> {
-        let https = HttpsConnector::new(4)?;
+        // Setup the shared HTTP(S) client
+        let mut http = HttpConnector::new(4);
+        http.enforce_http(false);
+
+        let mut tls_builder = TlsConnector::builder();
+        // yay fucking self-signed certs
+        let _ = tls_builder.danger_accept_invalid_certs(true);
+        let tls = tls_builder.build()?;
+
+        let https = HttpsConnector::from((http, tls.into()));
         let client = Client::builder().build::<_, Body>(https);
         let rt = Runtime::new()?;
 
@@ -380,7 +393,10 @@ impl Ser for EventType {
 }
 
 impl<'de> Deser<'de> for EventType {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         deserializer.deserialize_str(EventTypeVisitor)
     }
 }
@@ -394,14 +410,17 @@ impl Visitor<'_> for EventTypeVisitor {
         f.write_str("one of ERROR, INFO, PERFORMANCE, TRACKING or SYSTEM")
     }
 
-    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> where E: de::Error {
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
         Ok(match value {
             "ERROR" => EventType::Error,
             "INFO" => EventType::Info,
             "PERFORMANCE" => EventType::Performance,
             "TRACKING" => EventType::Tracking,
             "SYSTEM" => EventType::System,
-            _ => return Err(E::custom(format!("invalid event type: {}", value)))
+            _ => return Err(E::custom(format!("invalid event type: {}", value))),
         })
     }
 }
@@ -434,7 +453,10 @@ impl Ser for Response {
 }
 
 impl<'de> Deser<'de> for Response {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         deserializer.deserialize_str(ResponseVisitor)
     }
 }
@@ -448,11 +470,14 @@ impl Visitor<'_> for ResponseVisitor {
         f.write_str("one of success or failure")
     }
 
-    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> where E: de::Error {
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
         Ok(match value {
             "success" => Response::Success,
             "failure" => Response::Failure,
-            _ => return Err(E::custom(format!("invalid response: {}", value)))
+            _ => return Err(E::custom(format!("invalid response: {}", value))),
         })
     }
 }
