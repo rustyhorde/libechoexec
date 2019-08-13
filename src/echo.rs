@@ -140,7 +140,7 @@ pub enum CollectorUrl {
 
 impl Default for CollectorUrl {
     fn default() -> Self {
-        CollectorUrl::Stage
+        Self::Stage
     }
 }
 
@@ -148,8 +148,8 @@ impl CollectorUrl {
     /// Convert the enum to a str
     pub fn as_str(self) -> &'static str {
         match self {
-            CollectorUrl::Stage => "https://echocollector-stage.kroger.com/echo/messages",
-            CollectorUrl::Prod => "https://echocollector.kroger.com/echo/messages",
+            Self::Stage => "https://echocollector-stage.kroger.com/echo/messages",
+            Self::Prod => "https://echocollector.kroger.com/echo/messages",
         }
     }
 }
@@ -373,7 +373,7 @@ pub enum EventType {
 
 impl Default for EventType {
     fn default() -> Self {
-        EventType::Info
+        Self::Info
     }
 }
 
@@ -383,11 +383,11 @@ impl Ser for EventType {
         S: Serializer,
     {
         match *self {
-            EventType::Error => serializer.serialize_str("ERROR"),
-            EventType::Info => serializer.serialize_str("INFO"),
-            EventType::Performance => serializer.serialize_str("PERFORMANCE"),
-            EventType::Tracking => serializer.serialize_str("TRACKING"),
-            EventType::System => serializer.serialize_str("SYSTEM"),
+            Self::Error => serializer.serialize_str("ERROR"),
+            Self::Info => serializer.serialize_str("INFO"),
+            Self::Performance => serializer.serialize_str("PERFORMANCE"),
+            Self::Tracking => serializer.serialize_str("TRACKING"),
+            Self::System => serializer.serialize_str("SYSTEM"),
         }
     }
 }
@@ -436,7 +436,7 @@ pub enum Response {
 
 impl Default for Response {
     fn default() -> Self {
-        Response::Success
+        Self::Success
     }
 }
 
@@ -446,8 +446,8 @@ impl Ser for Response {
         S: Serializer,
     {
         match *self {
-            Response::Success => serializer.serialize_str("success"),
-            Response::Failure => serializer.serialize_str("failure"),
+            Self::Success => serializer.serialize_str("success"),
+            Self::Failure => serializer.serialize_str("failure"),
         }
     }
 }

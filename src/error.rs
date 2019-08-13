@@ -103,27 +103,27 @@ pub enum ErrKind {
 impl Error for ErrKind {
     fn description(&self) -> &str {
         match self {
-            ErrKind::Hyper(inner) => inner.description(),
-            ErrKind::HyperHTTP(inner) => inner.description(),
-            ErrKind::HyperTLS(inner) => inner.description(),
-            ErrKind::Io(inner) => inner.description(),
-            ErrKind::ParseUuid(inner) => inner.description(),
-            ErrKind::SerdeJson(inner) => inner.description(),
-            ErrKind::Str(inner) => &inner[..],
-            ErrKind::Var(inner) => inner.description(),
-            ErrKind::Run => "An error has occurred during run",
+            Self::Hyper(inner) => inner.description(),
+            Self::HyperHTTP(inner) => inner.description(),
+            Self::HyperTLS(inner) => inner.description(),
+            Self::Io(inner) => inner.description(),
+            Self::ParseUuid(inner) => inner.description(),
+            Self::SerdeJson(inner) => inner.description(),
+            Self::Str(inner) => &inner[..],
+            Self::Var(inner) => inner.description(),
+            Self::Run => "An error has occurred during run",
         }
     }
 
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            ErrKind::Hyper(inner) => inner.source(),
-            ErrKind::HyperHTTP(inner) => inner.source(),
-            ErrKind::HyperTLS(inner) => inner.source(),
-            ErrKind::Io(inner) => inner.source(),
-            ErrKind::ParseUuid(inner) => inner.source(),
-            ErrKind::SerdeJson(inner) => inner.source(),
-            ErrKind::Var(inner) => inner.source(),
+            Self::Hyper(inner) => inner.source(),
+            Self::HyperHTTP(inner) => inner.source(),
+            Self::HyperTLS(inner) => inner.source(),
+            Self::Io(inner) => inner.source(),
+            Self::ParseUuid(inner) => inner.source(),
+            Self::SerdeJson(inner) => inner.source(),
+            Self::Var(inner) => inner.source(),
             _ => None,
         }
     }
@@ -133,8 +133,8 @@ impl fmt::Display for ErrKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.description())?;
         match self {
-            ErrKind::Io(inner) => write!(f, ": {}", inner),
-            ErrKind::Var(inner) => write!(f, ": {}", inner),
+            Self::Io(inner) => write!(f, ": {}", inner),
+            Self::Var(inner) => write!(f, ": {}", inner),
             _ => write!(f, ""),
         }
     }
