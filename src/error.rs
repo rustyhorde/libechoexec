@@ -33,7 +33,7 @@ impl Error for Err {
 
 impl fmt::Display for Err {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.description())?;
+        write!(f, "{}", self)?;
 
         if let Some(source) = self.inner.source() {
             write!(f, ": {}", source)?;
@@ -70,12 +70,12 @@ impl From<&str> for Err {
 
 external_error!(hyper::Error, ErrKind::Hyper);
 external_error!(hyper::http::Error, ErrKind::HyperHTTP);
-external_error!(hyper_tls::Error, ErrKind::HyperTLS);
+external_error!(native_tls::Error, ErrKind::NativeTLS);
 external_error!(serde_json::Error, ErrKind::SerdeJson);
 external_error!(std::io::Error, ErrKind::Io);
 external_error!(String, ErrKind::Str);
 external_error!(std::env::VarError, ErrKind::Var);
-external_error!(uuid::parser::ParseError, ErrKind::ParseUuid);
+external_error!(uuid::Error, ErrKind::ParseUuid);
 
 /// The error kind of an error thrown by `libechoexec`
 #[derive(Debug)]
@@ -84,12 +84,12 @@ pub enum ErrKind {
     Hyper(hyper::Error),
     /// An HTTP error from the `hyper` library
     HyperHTTP(hyper::http::Error),
-    /// An error from the `hyper-tls` library
-    HyperTLS(hyper_tls::Error),
+    /// An error from the `native_tls` library
+    NativeTLS(native_tls::Error),
     /// An Io error
     Io(std::io::Error),
     /// An error parsing a UUID
-    ParseUuid(uuid::parser::ParseError),
+    ParseUuid(uuid::Error),
     /// An error from the `serde_json` library
     SerdeJson(serde_json::Error),
     /// An error string
@@ -101,25 +101,11 @@ pub enum ErrKind {
 }
 
 impl Error for ErrKind {
-    fn description(&self) -> &str {
-        match self {
-            Self::Hyper(inner) => inner.description(),
-            Self::HyperHTTP(inner) => inner.description(),
-            Self::HyperTLS(inner) => inner.description(),
-            Self::Io(inner) => inner.description(),
-            Self::ParseUuid(inner) => inner.description(),
-            Self::SerdeJson(inner) => inner.description(),
-            Self::Str(inner) => &inner[..],
-            Self::Var(inner) => inner.description(),
-            Self::Run => "An error has occurred during run",
-        }
-    }
-
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::Hyper(inner) => inner.source(),
             Self::HyperHTTP(inner) => inner.source(),
-            Self::HyperTLS(inner) => inner.source(),
+            Self::NativeTLS(inner) => inner.source(),
             Self::Io(inner) => inner.source(),
             Self::ParseUuid(inner) => inner.source(),
             Self::SerdeJson(inner) => inner.source(),
@@ -131,7 +117,7 @@ impl Error for ErrKind {
 
 impl fmt::Display for ErrKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.description())?;
+        write!(f, "{}", self)?;
         match self {
             Self::Io(inner) => write!(f, ": {}", inner),
             Self::Var(inner) => write!(f, ": {}", inner),

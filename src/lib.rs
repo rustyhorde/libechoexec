@@ -101,7 +101,7 @@
 //! #     Ok(())
 //! # }
 //! ```
-#![feature(async_await, crate_visibility_modifier)]
+#![feature(crate_visibility_modifier)]
 #![deny(
     absolute_paths_not_starting_with_crate,
     anonymous_parameters,

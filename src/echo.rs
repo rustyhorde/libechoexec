@@ -11,7 +11,7 @@
 use {
     crate::error::ErrKind,
     getset::Setters,
-    hyper::{client::HttpConnector, Body, Client, Request},
+    hyper::{body::HttpBody, client::HttpConnector, Body, Client, Request},
     hyper_tls::HttpsConnector,
     lazy_static::lazy_static,
     native_tls::TlsConnector,
@@ -38,9 +38,12 @@ pub struct Spawner {
 
 impl Spawner {
     /// Create a new `EchoRuntime`
+    ///
+    /// # Errors
+    ///
     pub fn new() -> crate::error::Result<Self> {
         // Setup the shared HTTP(S) client
-        let mut http = HttpConnector::new(4);
+        let mut http = HttpConnector::new();
         http.enforce_http(false);
 
         let mut tls_builder = TlsConnector::builder();
@@ -56,6 +59,9 @@ impl Spawner {
     }
 
     /// Spawn an `Echo Event` on the inner `tokio` runtime
+    ///
+    /// # Errors
+    ///
     pub fn spawn(&self, payload: &Payload) -> crate::error::Result<()> {
         // Clone to move into async closure
         let events_clone = payload.events.clone();
@@ -98,7 +104,7 @@ async fn run_impl(
         .header("Content-Length", length)
         .body(Body::from(json))?;
 
-    let resp = client.request(req).await?;
+    let mut resp = client.request(req).await?;
 
     if resp.status().is_success() {
         try_trace!(logger, "Successfully sent payload to echo");
@@ -118,12 +124,13 @@ async fn run_impl(
             err_type,
             resp.status()
         );
-        let mut body = resp.into_body();
+
         let mut buffer = vec![];
-        while let Some(next) = body.next().await {
+        while let Some(next) = resp.data().await {
             let chunk = next?;
             buffer.write_all(&chunk)?;
         }
+
         try_error!(logger, "{}", String::from_utf8_lossy(&buffer));
         Err(ErrKind::Run.into())
     }
@@ -146,6 +153,7 @@ impl Default for CollectorUrl {
 
 impl CollectorUrl {
     /// Convert the enum to a str
+    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Stage => "https://echocollector-stage.kroger.com/echo/messages",
@@ -544,7 +552,7 @@ mod test {
         let _ = echo_event.set_message_detail(Some(
             message_detail
                 .iter_mut()
-                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
                 .collect(),
         ));
         let _ = echo_event.set_host(Some("host"));
